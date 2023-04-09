@@ -44,22 +44,23 @@ def run_r2(binary_name):
                     prev_lines_hg += f"\x1b[90m{line}\x1b[0m\n"
             
             for m in set(mems):
-                if mems.count(m) >= 2: # TODO or may be 1 is enough
+                if mems.count(m) >= 2:
                     fetch_idx = []
                     jt_cal_idx = -1
-                    # cmp_idx = -1
                     for i, line in enumerate(prev_lines):
                         if line.find(m) != -1:
                             fetch_idx.append(i)
                         if len(re.findall(r'\[.*[+-].*\*[0-9]*\]',line)):
-                            jt_cal_idx = i
-                            # just need the last one 
+                            jt_cal_idx = i # we need the last one
                     # jump table pattern
                     if jt_cal_idx != -1 and len(re.findall(reg, prev_lines[jt_cal_idx])) == 2:
-                        # the second fetch is a load
-                        # reg is used at least once between [2nd fetch, the calculation [a+b*n]), but not a cmp
-                        # there is a cmp between [1st fetch, 2nd fetch), cmp can be [cmp, sub, test, and+xor, dec] call？
-                        # two fetches should in the same function
+                        """ 
+                        Constraints to filter out the needed pattern
+                        - the second fetch is a load
+                        - reg is used at least once between [2nd fetch, the calculation [a+b*n]), but not a cmp
+                        - there is a cmp between [1st fetch, 2nd fetch), cmp can be [cmp, sub, test, and+xor, dec] call
+                        - two fetches should in the same function
+                        """
                         if jt_cal_idx > fetch_idx[-1] and prev_lines[fetch_idx[-1]].find('mov') != -1 \
                             and prev_lines[fetch_idx[-1]].find('],') == -1 \
                             and len(re.findall(r'[re][abcds][xi]', prev_lines[fetch_idx[-1]])) \
@@ -67,10 +68,12 @@ def run_r2(binary_name):
                             and len(re.findall(r'cmp[ ]*[re]' + reg[1:], ''.join(prev_lines[fetch_idx[-1]:jt_cal_idx]))) == 0\
                             and len(re.findall('(?:cmp|sub|test|and|shl|sal|rol|dec)', ''.join(prev_lines[fetch_idx[-2]:fetch_idx[-1]])))\
                             and len(re.findall('(?:push rbp|ret)', ''.join(prev_lines[fetch_idx[-2]:fetch_idx[-1]]))) == 0:
+                            # figure out the gadget pattern: fetch->spill->fetch or fetch->fetch
                             if prev_lines[fetch_idx[-2]].find('],') != -1 and prev_lines[fetch_idx[-2]].find('cmp') == -1:
                                 df_type = 'f->s->f'
                             else:
                                 df_type = 'f->f'
+                            # length of the TOCTTOU time window
                             win_len = str(fetch_idx[-1] - fetch_idx[-2] + 1) + '-long'
                             if len(re.findall('(?:jmp|call)', ''.join(prev_lines[fetch_idx[-2]:fetch_idx[-1]]))):
                                 win_len = win_len + ' with j/c'
