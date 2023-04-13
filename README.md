@@ -34,7 +34,10 @@ find path/to/target_folder -type f ! -size 0 -exec grep -IL . "{}" \; | python3 
 
 ## Proof of Concept exploit
 To get arbitrary Read&Write, we introduce an out-of-bound bug to Firefox 106.0.1 
-inspired from one [CTF challenge](https://devcraft.io/2018/04/27/blazefox-blaze-ctf-2018.html). Please find the patch [here](./poc_exploit/blaze.patch).
+inspired from one [CTF challenge](https://devcraft.io/2018/04/27/blazefox-blaze-ctf-2018.html). 
+Please find the patch [here](./poc_exploit/blaze.patch). 
+Note that if you would like to reproduce the exploit with the same gadget we use, please use GCC to compile the Firefox.
+Please note that if you intend to reproduce the exploit using the same gadget that we used, you should compile Firefox with GCC.
 
 We also provide a [web page](./poc_exploit/warpattack1a.html) containing malicious [JS code](./poc_exploit/warpattack1a.js). The exploit will be 
 triggered when the web page is accessed with the vulnerbale Firefox browser.
